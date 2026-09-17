@@ -1,0 +1,170 @@
+/* ============================================================
+   Quiet Shelf（暗格）— styles
+   只做两件事：
+   1. 把打了 .qs-hidden 的文件树节点收起来（彻底不占位）
+   2. 暗格清单模态框的排版
+   颜色一律取主题变量，深浅色与纸纹主题自动适配。所有类名前缀固定 .qs-
+   ============================================================ */
+
+/* ---- 1. 被收起的节点 ---- */
+
+/* 用 !important 是功能需要：Obsidian 与主题都会给 .tree-item 设 display，
+   这一条必须稳定生效，否则「隐藏」会时灵时不灵。 */
+.nav-files-container .tree-item.qs-hidden {
+  display: none !important;
+}
+
+/* ---- 2. 暗格清单 ---- */
+
+.qs-modal h4 {
+  margin: 0 0 6px;
+  font-size: var(--font-ui-medium);
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.qs-modal-hint {
+  margin-bottom: 14px;
+  font-size: var(--font-ui-smaller);
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.qs-modal-empty {
+  padding: 18px 0;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+}
+
+.qs-modal-list {
+  max-height: 52vh;
+  overflow-y: auto;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.qs-modal-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 2px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-smaller);
+}
+
+.qs-modal-kind {
+  flex: 0 0 auto;
+  min-width: 46px;
+  color: var(--text-faint);
+}
+
+.qs-modal-path {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text-normal);
+  overflow-wrap: anywhere;
+}
+
+.qs-modal-tag {
+  flex: 0 0 auto;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--background-modifier-hover);
+  color: var(--text-faint);
+}
+
+.qs-modal-row button {
+  flex: 0 0 auto;
+}
+
+/* ---- 3. 批量管理 ---- */
+
+/* 批量界面要能装下长路径，把弹窗放宽一些 */
+.modal:has(.qs-batch) {
+  width: min(760px, 94vw);
+}
+
+.qs-batch-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.qs-batch-bar input[type="search"] {
+  flex: 1 1 180px;
+  min-width: 140px;
+}
+
+.qs-batch-bar button {
+  flex: 0 0 auto;
+  font-size: var(--font-ui-smaller);
+}
+
+.qs-batch-tree {
+  height: min(52vh, 460px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 6px 0;
+}
+
+.qs-batch-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 10px 3px 0;
+  font-size: var(--font-ui-smaller);
+  line-height: 1.5;
+}
+
+.qs-batch-row:hover {
+  background: var(--background-modifier-hover);
+}
+
+.qs-batch-toggle {
+  flex: 0 0 14px;
+  width: 14px;
+  text-align: center;
+  color: var(--text-faint);
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--font-monospace);
+}
+
+.qs-batch-toggle.is-blank {
+  cursor: default;
+}
+
+.qs-batch-row input[type="checkbox"] {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.qs-batch-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qs-batch-name.is-folder {
+  color: var(--text-normal);
+  font-weight: 500;
+}
+
+.qs-batch-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.qs-batch-count {
+  flex: 1 1 auto;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
