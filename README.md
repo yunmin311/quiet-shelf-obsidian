@@ -10,6 +10,8 @@ Quiet Shelf does two things, both purely at the display layer of the file
 explorer. Your files never move, nothing is renamed, and the graph, search,
 backlinks and sync all keep working exactly as before.
 
+![Shelf panel](docs/shot-shelf-panel.png)
+
 ## Hide
 
 Shelve a file or folder and it simply stops showing up in the explorer. Shelved
@@ -19,11 +21,15 @@ auto-shelved by filename.
 Items you have manually un-shelved stay un-shelved — the automatic rule will not
 grab them again.
 
+![Archive and Reading shelved away](docs/shot-shelved-tree.png)
+
 ## Focus
 
 Select folders and files across different levels of the tree, and only that set
 (plus its ancestors and descendants) stays visible. Focus sets can be saved
 under a name and recalled later.
+
+![Focus on a single folder](docs/shot-focus.png)
 
 ## Why
 
