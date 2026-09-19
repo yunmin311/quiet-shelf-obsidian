@@ -10,9 +10,7 @@ const COMMON = {
       "设置页、命令与提示的显示语言。「跟随 Obsidian」会随界面语言自动切换。",
     "sponsor.title": "赞助支持",
     "sponsor.body":
-      "这些插件都是独立开发并免费开源的，没有任何商业绑定。如果它确实省下了时间，可以通过下面的方式支持后续维护。",
-    "sponsor.overseas": "海外",
-    "sponsor.domestic": "国内",
+      "这些插件都是独立开发并免费开源的，没有任何商业绑定。如果它确实省下了时间，可以通过 GitHub Sponsors 支持后续维护。",
     "meta.version": "版本",
     "meta.repository": "仓库",
     "common.reset": "恢复默认",
@@ -26,9 +24,7 @@ const COMMON = {
       'Language for this settings page, commands and notices. "Follow Obsidian" tracks the app language.',
     "sponsor.title": "Sponsorship",
     "sponsor.body":
-      "These plugins are built independently and released free and open-source, with no commercial tie-in. If one of them saves you time, you can support ongoing maintenance through the links below.",
-    "sponsor.overseas": "International",
-    "sponsor.domestic": "China",
+      "These plugins are built independently and released free and open-source, with no commercial tie-in. If one of them saves you time, you can support ongoing maintenance via GitHub Sponsors.",
     "meta.version": "Version",
     "meta.repository": "Repository",
     "common.reset": "Restore defaults",
@@ -102,7 +98,7 @@ const OWN = {
 
     "settings.autoRules.name": "自动收起的文件名",
     "settings.autoRules.desc":
-      "每行一个关键词，按文件名精确匹配（不含 .md 后缀，不区分大小写）。比如 readme、inbox、index。被手动放回过的文件不会再被自动收起。",
+      "每行一个关键词（不含 .md 后缀，不区分大小写）。用 * 作通配符：index 精确匹配；index* 以 index 开头；*index 以 index 结尾；*index* 含 index 即收起（如 _Aesthetic Index）。被手动放回过的文件不会再被自动收起。",
     "settings.autoEnabled.name": "启用自动规则",
     "settings.autoEnabled.desc": "关掉后只保留手动移入暗格的项目。",
     "settings.openShelf.name": "打开暗格清单",
@@ -185,7 +181,7 @@ const OWN = {
 
     "settings.autoRules.name": "Auto-shelved file names",
     "settings.autoRules.desc":
-      "One keyword per line, matched exactly against the file name (without the .md extension, case-insensitive). For example readme, inbox, index. Anything you restored by hand is never auto-shelved again.",
+      "One keyword per line (without the .md extension, case-insensitive). Use * as a wildcard: index matches exactly; index* starts with index; *index ends with index; *index* contains index (e.g. _Aesthetic Index). Anything you restored by hand is never auto-shelved again.",
     "settings.autoEnabled.name": "Enable auto rules",
     "settings.autoEnabled.desc": "With this off, only hand-picked items stay on the shelf.",
     "settings.openShelf.name": "Open the shelf list",

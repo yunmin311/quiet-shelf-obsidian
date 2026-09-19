@@ -21,6 +21,27 @@ auto-shelved by filename.
 Items you have manually un-shelved stay un-shelved — the automatic rule will not
 grab them again.
 
+### Auto-shelve rules
+
+One rule per line, matched case-insensitively against the file name (without the
+`.md` extension). `*` is a wildcard, and where you put it decides the match:
+
+| Rule | Matches | Example |
+|---|---|---|
+| `index` | the name is exactly `index` | `index.md` |
+| `index*` | the name starts with `index` | `index-old.md` |
+| `*index` | the name ends with `index` | `_Aesthetic Index.md` |
+| `*index*` | the name contains `index` anywhere | `my-index-old.md` |
+
+Without a `*` the behaviour is the old exact match, so existing rules keep
+working.
+
+> **A bare rule is an exact match, not a substring match.** A rule of `hub`
+> matches only a file called `hub` — it does **not** catch `github.md`,
+> `GitHub.md` or `my-github.md`. To match everything containing a word, write
+> `*word*`; but note that **`*hub*` *does* catch `github`**, because the name
+> contains `hub`. Pick the position that says what you mean.
+
 ![Archive and Reading shelved away](docs/shot-shelved-tree.png)
 
 ## Focus
@@ -104,6 +125,13 @@ mechanism every Obsidian plugin uses for local settings.
 手动放回过的东西不会被自动规则再次收起。
 
 **聚焦**：跨层级多选文件夹和文件，只留下选中组及其祖先与后代，可存成命名组合随时切换。
+
+**自动规则（0.3.0 起支持通配符）**：`index` 精确匹配 / `index*` 开头 / `*index` 结尾 /
+`*index*` 包含，均不分大小写。
+
+⚠️ **不带 `*` 是精确匹配，不是包含匹配。** 规则写 `hub` **只**匹配名叫 `hub` 的文件，
+**不会**收掉 `github.md` / `GitHub.md` / `my-github.md`。
+想匹配"含某词"请写 `*词*` —— 但注意 **`*hub*` 会连带收掉 `github`**（因为 `github` 里含 `hub`）。
 
 安装：在社区插件里搜 "Quiet Shelf"，或从 Release 下载三个文件放进
 `.obsidian/plugins/quiet-shelf/`。

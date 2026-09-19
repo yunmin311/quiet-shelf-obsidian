@@ -25,9 +25,346 @@ const {
   Notice,
   Modal,
 } = require("obsidian");
-const { bindI18n } = require("./i18n");
-const { renderSponsor } = require("./sponsor");
 
+
+/* ============================================================
+   【内联模块 · 自动生成，请勿手改这一段】
+   ------------------------------------------------------------
+   以下三段来自仓库里的 locales.js / i18n.js / sponsor.js，
+   由打包脚本 bundle-inline.js 拼接到此（脚本在 _scratch/_i18n/）。
+
+   为什么不写 require("./locales")：
+   Obsidian 注入的 require 是白名单函数，只认 obsidian / @codemirror /
+   @lezer 与 Electron 的 window.require，**不解析插件的相对路径** ——
+   require("./x") 会返回 undefined，插件直接加载失败。
+
+   改动流程：改源文件 → node bundle-inline.js <插件目录> → 跑 sync-plugins.ps1
+   ============================================================ */
+
+/* ---------- 来自 locales.js ---------- */
+/* Quiet Shelf（暗格）—— 界面字符串表。
+   含命令、右键菜单、两个弹窗、Notice 与设置页的全部界面文字。 */
+
+const COMMON = {
+  zh: {
+    "settings.language.name": "界面语言",
+    "settings.language.desc":
+      "设置页、命令与提示的显示语言。「跟随 Obsidian」会随界面语言自动切换。",
+    "sponsor.title": "赞助支持",
+    "sponsor.body":
+      "这些插件都是独立开发并免费开源的，没有任何商业绑定。如果它确实省下了时间，可以通过 GitHub Sponsors 支持后续维护。",
+    "meta.version": "版本",
+    "meta.repository": "仓库",
+    "common.reset": "恢复默认",
+    "common.reset.done": "已恢复默认设置",
+    "common.clear": "清除",
+    "common.open": "打开",
+  },
+  en: {
+    "settings.language.name": "Interface language",
+    "settings.language.desc":
+      'Language for this settings page, commands and notices. "Follow Obsidian" tracks the app language.',
+    "sponsor.title": "Sponsorship",
+    "sponsor.body":
+      "These plugins are built independently and released free and open-source, with no commercial tie-in. If one of them saves you time, you can support ongoing maintenance via GitHub Sponsors.",
+    "meta.version": "Version",
+    "meta.repository": "Repository",
+    "common.reset": "Restore defaults",
+    "common.reset.done": "Settings restored to defaults",
+    "common.clear": "Clear",
+    "common.open": "Open",
+  },
+};
+
+const OWN = {
+  zh: {
+    "meta.desc":
+      "把归档与索引类笔记从文件树里收起来（不移动文件），并支持一次只聚焦一组文件夹。",
+
+    "command.openShelf": "打开暗格",
+    "command.batch": "批量移入 / 移出暗格",
+    "command.toggleShelve": "把当前文件移入 / 移出暗格",
+    "command.toggleFocus": "切换聚焦模式",
+    "command.focusFolder": "聚焦当前文件所在文件夹",
+    "command.clearFocus": "退出聚焦（恢复全部）",
+    "command.saveSet": "把当前聚焦存为组合",
+
+    "menu.reveal": "从暗格放回",
+    "menu.shelve": "移入暗格",
+    "menu.unfocus": "从聚焦移除",
+    "menu.focus": "加入聚焦",
+
+    "notice.revealed": "已从暗格放回：{path}",
+    "notice.shelved": "已移入暗格：{path}",
+    "notice.noActiveFile": "当前没有打开的文件",
+    "notice.focusEmpty": "聚焦清单是空的 —— 先对文件夹用「加入聚焦」",
+    "notice.focusOn": "已进入聚焦：{n} 项",
+    "notice.focusOff": "已退出聚焦",
+    "notice.focused": "已加入聚焦：{path}",
+    "notice.nothingToSave": "聚焦清单是空的，没什么可存的",
+    "notice.setSaved": "已保存组合：{name}",
+    "notice.setSwitched": "已切换到组合：{name}",
+    "notice.pickFirst": "先勾选要处理的项目",
+    "notice.batchDone": "已移入暗格 {n} 项",
+    "notice.batchReverted": "已从暗格放回 {n} 项",
+
+    "prompt.setName.title": "给这组聚焦起个名字",
+    "prompt.setName.default": "组合 {n}",
+
+    "kind.folder": "文件夹",
+    "kind.file": "文件",
+    "kind.stale": "已失效",
+
+    "shelf.title": "暗格 · {n} 项",
+    "shelf.hint":
+      "这里的文件只是左侧不显示，位置、知识图谱、搜索都不受影响。点「放回」即恢复显示。",
+    "shelf.empty": "暗格是空的。",
+    "shelf.tagAuto": "自动",
+    "shelf.restore": "放回",
+
+    "batch.title": "批量管理",
+    "batch.hint":
+      "勾选文件夹或文件，然后一次移入暗格或放回。只影响左侧文件树的显示，不动任何文件。",
+    "batch.filter": "筛选路径…",
+    "batch.expandAll": "展开全部",
+    "batch.collapseAll": "折叠全部",
+    "batch.selectResults": "选中当前结果",
+    "batch.clearSelection": "清空选择",
+    "batch.shelve": "移入暗格",
+    "batch.reveal": "从暗格放回",
+    "batch.count": "已选 {n} 项",
+    "batch.countNone": "还没勾选任何项",
+    "batch.topLevel": "（整个 vault）",
+    "batch.noMatch": "没有匹配的路径。",
+    "batch.alreadyShelved": "已在暗格",
+
+    "settings.autoRules.name": "自动收起的文件名",
+    "settings.autoRules.desc":
+      "每行一个关键词（不含 .md 后缀，不区分大小写）。用 * 作通配符：index 精确匹配；index* 以 index 开头；*index 以 index 结尾；*index* 含 index 即收起（如 _Aesthetic Index）。被手动放回过的文件不会再被自动收起。",
+    "settings.autoEnabled.name": "启用自动规则",
+    "settings.autoEnabled.desc": "关掉后只保留手动移入暗格的项目。",
+    "settings.openShelf.name": "打开暗格清单",
+    "settings.openShelf.desc": "查看当前所有被收起的项目，并可逐个放回。",
+    "settings.batch.name": "批量管理",
+    "settings.batch.desc":
+      "把整个 vault 摊成可勾选的列表，一次把多个文件夹或文件移入暗格 / 放回。带筛选框，也可以「选中当前结果」一次性处理某个路径下的全部内容。",
+    "settings.focus.heading": "聚焦",
+    "settings.focusList.name": "当前聚焦清单（{n} 项）",
+    "settings.focusList.empty":
+      "空。在文件上右键选「加入聚焦」，或先打开一篇笔记再用命令「聚焦当前文件所在文件夹」。",
+    "settings.savedSets.heading": "已保存的组合",
+    "settings.setSwitch": "切换",
+    "settings.setDelete": "删除",
+    "settings.reset.name": "恢复默认设置",
+    "settings.reset.desc":
+      "清掉暗格清单、已放回记录、聚焦目标与已保存组合（自动规则的关键词会回到 readme / inbox）。",
+  },
+
+  en: {
+    "meta.desc":
+      "Tuck archived and index notes out of the file explorer without moving them, and focus on one set of folders at a time.",
+
+    "command.openShelf": "Open shelf",
+    "command.batch": "Batch shelve / restore",
+    "command.toggleShelve": "Shelve or restore the active file",
+    "command.toggleFocus": "Toggle focus mode",
+    "command.focusFolder": "Focus the active file's folder",
+    "command.clearFocus": "Exit focus (show everything)",
+    "command.saveSet": "Save current focus as a set",
+
+    "menu.reveal": "Restore from shelf",
+    "menu.shelve": "Move to shelf",
+    "menu.unfocus": "Remove from focus",
+    "menu.focus": "Add to focus",
+
+    "notice.revealed": "Restored from shelf: {path}",
+    "notice.shelved": "Moved to shelf: {path}",
+    "notice.noActiveFile": "No file is open",
+    "notice.focusEmpty": 'The focus list is empty — add a folder to focus first',
+    "notice.focusOn": "Focus on: {n} item(s)",
+    "notice.focusOff": "Focus off",
+    "notice.focused": "Added to focus: {path}",
+    "notice.nothingToSave": "The focus list is empty, nothing to save",
+    "notice.setSaved": "Saved set: {name}",
+    "notice.setSwitched": "Switched to set: {name}",
+    "notice.pickFirst": "Select something to act on first",
+    "notice.batchDone": "Moved {n} item(s) to the shelf",
+    "notice.batchReverted": "Restored {n} item(s) from the shelf",
+
+    "prompt.setName.title": "Name this focus set",
+    "prompt.setName.default": "Set {n}",
+
+    "kind.folder": "Folder",
+    "kind.file": "File",
+    "kind.stale": "Missing",
+
+    "shelf.title": "Shelf · {n} item(s)",
+    "shelf.hint":
+      "These items are only hidden from the file explorer — their location, the graph and search are unaffected. Click Restore to show one again.",
+    "shelf.empty": "The shelf is empty.",
+    "shelf.tagAuto": "auto",
+    "shelf.restore": "Restore",
+
+    "batch.title": "Batch manage",
+    "batch.hint":
+      "Tick folders or files, then shelve or restore them in one go. Only the file explorer's display changes — no file is touched.",
+    "batch.filter": "Filter paths…",
+    "batch.expandAll": "Expand all",
+    "batch.collapseAll": "Collapse all",
+    "batch.selectResults": "Select results",
+    "batch.clearSelection": "Clear selection",
+    "batch.shelve": "Move to shelf",
+    "batch.reveal": "Restore from shelf",
+    "batch.count": "{n} selected",
+    "batch.countNone": "Nothing selected yet",
+    "batch.topLevel": "(entire vault)",
+    "batch.noMatch": "No matching paths.",
+    "batch.alreadyShelved": "on shelf",
+
+    "settings.autoRules.name": "Auto-shelved file names",
+    "settings.autoRules.desc":
+      "One keyword per line (without the .md extension, case-insensitive). Use * as a wildcard: index matches exactly; index* starts with index; *index ends with index; *index* contains index (e.g. _Aesthetic Index). Anything you restored by hand is never auto-shelved again.",
+    "settings.autoEnabled.name": "Enable auto rules",
+    "settings.autoEnabled.desc": "With this off, only hand-picked items stay on the shelf.",
+    "settings.openShelf.name": "Open the shelf list",
+    "settings.openShelf.desc": "Review everything currently shelved and restore items one by one.",
+    "settings.batch.name": "Batch manage",
+    "settings.batch.desc":
+      "Lay the whole vault out as a tickable list and shelve or restore many folders/files at once. Includes a filter box and a \"select results\" shortcut for a whole path.",
+    "settings.focus.heading": "Focus",
+    "settings.focusList.name": "Current focus list ({n})",
+    "settings.focusList.empty":
+      'Empty. Right-click a file and choose "Add to focus", or open a note and run "Focus the active file\'s folder".',
+    "settings.savedSets.heading": "Saved sets",
+    "settings.setSwitch": "Switch",
+    "settings.setDelete": "Delete",
+    "settings.reset.name": "Restore defaults",
+    "settings.reset.desc":
+      "Clear the shelf, the restored list, the focus targets and every saved set (auto-rule keywords return to readme / inbox).",
+  },
+};
+const LOCALES = buildLocales();
+/** 把公共表与本插件表合并；插件缺某语言时回落到英语。 */
+function buildLocales() {
+  const out = {};
+  const langs = new Set([...Object.keys(COMMON), ...Object.keys(OWN)]);
+  for (const lang of langs) {
+    out[lang] = Object.assign(
+      {},
+      COMMON[lang] || COMMON.en,
+      OWN[lang] || OWN.en
+    );
+  }
+  return out;
+}
+
+/* ---------- 来自 i18n.js ---------- */
+/* i18n —— 多语言运行时。
+
+   为什么不用 Obsidian 的 moment.locale()：moment 只管日期格式化，不提供
+   界面字符串表；而且用户在设置页切语言要即时生效，moment 的切换要等界面重建。
+
+   设计约束：
+   - t() 永不抛异常：缺键回落到英语，英语也缺就返回键名本身。
+     设置页少一行字，好过整页白屏。
+   - 支持 {name} 占位符；参数没给就原样保留，方便定位漏传。
+   - 界面字符串全部集中在 locales.js，main.js 里不留字面量。
+
+   这份 i18n.js 在四个自研插件里是同一份（各自复制，因为插件是独立仓库、
+   不能互相 require）。改动请四处同步。 */
+
+/** 设置页语言下拉框的定义顺序。 */
+const LANGUAGE_OPTIONS = [
+  { id: "auto", label: "跟随 Obsidian / Follow Obsidian" },
+  { id: "zh", label: "简体中文" },
+  { id: "en", label: "English" },
+];
+
+/**
+ * 把偏好解析成实际语言 id。
+ * "auto" 时读 Obsidian 的界面语言；任何异常都回落到英语 ——
+ * 语言探测失败不值得让设置页打不开。
+ */
+function resolveLanguage(pref) {
+  if (pref && pref !== "auto" && LOCALES[pref]) return pref;
+  try {
+    const raw =
+      window.localStorage.getItem("language") ||
+      document.documentElement.lang ||
+      "";
+    const short = String(raw).toLowerCase().slice(0, 2);
+    if (short && LOCALES[short]) return short;
+  } catch (e) {
+    /* 忽略：回落英语 */
+  }
+  return "en";
+}
+
+function translate(lang, key, vars) {
+  const table = LOCALES[lang] || LOCALES.en;
+  let s = table[key];
+  if (s === undefined) {
+    const fb = LOCALES.en[key];
+    s = fb === undefined ? key : fb;
+  }
+  if (!vars) return s;
+  return String(s).replace(/\{(\w+)\}/g, (m, name) =>
+    vars[name] === undefined ? m : String(vars[name])
+  );
+}
+
+/** 绑定插件实例：读 settings.language，暴露 t()。 */
+function bindI18n(plugin) {
+  const current = () =>
+    resolveLanguage(plugin && plugin.settings ? plugin.settings.language : "auto");
+
+  plugin.i18n = {
+    get resolved() {
+      return current();
+    },
+    t(key, vars) {
+      return translate(current(), key, vars);
+    },
+    options: LANGUAGE_OPTIONS,
+  };
+  return plugin.i18n;
+}
+
+/* ---------- 来自 sponsor.js ---------- */
+/* 赞助区块。
+ *
+ * 刻意做成一个独立小节而不是塞进说明文字里：设置页是用户唯一会认真读的
+ * 地方，藏起来等于没有。区块只渲染链接，不引任何外部脚本或图片 ——
+ * 插件必须保持零网络请求，否则会在社区市场审核时被质疑。
+ *
+ * 为什么只有 GitHub Sponsors 一条：
+ *   最初国内 / 海外分列（爱发电 + Ko-fi），但 qy 决定统一走 GitHub ——
+ *   单一入口便于维护，也避免在插件里出现多个可能失效/需要实名认证的平台。
+ *   保留 SPONSORS 数组结构（而不是塌成一个字符串），是为了将来真要加
+ *   第二条时改数据即可，不用动渲染代码。
+ */
+
+const SPONSORS = [
+  { label: "GitHub Sponsors", url: "https://github.com/sponsors/yunmin311" },
+];
+
+function linkRow(parent, label, url) {
+  const a = parent.createEl("a", { cls: "sp-link", text: label, href: url });
+  a.setAttr("target", "_blank");
+  a.setAttr("rel", "noopener");
+}
+
+/** 在 parent 里渲染赞助区块。t 是当前语言的取词函数。 */
+function renderSponsor(parent, t) {
+  const box = parent.createDiv({ cls: "sp-box" });
+  box.createDiv({ cls: "sp-title", text: t("sponsor.title") });
+  box.createDiv({ cls: "sp-body", text: t("sponsor.body") });
+
+  const row = box.createDiv({ cls: "sp-row" });
+  for (const l of SPONSORS) linkRow(row, l.label, l.url);
+}
+
+/* ======================== 内联模块结束 ======================== */
 const HIDDEN_CLASS = "qs-hidden";
 const EXPLORER_SELECTOR = ".nav-files-container";
 const APPLY_DELAY_MS = 32;
@@ -122,14 +459,38 @@ class QuietShelfPlugin extends Plugin {
 
   /* ---------- 判定 ---------- */
 
-  /** 命中自动规则吗（按名字精确匹配，去掉 .md 后缀，大小写不敏感） */
+  /**
+   * 命中自动规则吗（按文件名匹配，去掉 .md 后缀，大小写不敏感）
+   *
+   * 四种写法，`*` 是通配符，位置决定匹配方式：
+   *   index     精确 —— 文件名正好是 "index"
+   *   index*    开头 —— 文件名以 "index" 开头（如 index-old）
+   *   *index    结尾 —— 文件名以 "index" 结尾（如 _Aesthetic Index）
+   *   *index*   包含 —— 文件名里含 "index"（如 my-index-old）
+   *
+   * 为什么不干脆都做成「包含」：规则里的 "hub" 若一律包含匹配，
+   * 会把 "github" 一起收进去。三种写法并存，才能精确表达意图。
+   */
   matchesAutoRule(path) {
     if (!this.settings.autoEnabled) return false;
     const name = String(path).split("/").pop() || "";
     const base = name.replace(/\.md$/i, "").toLowerCase();
     return (this.settings.autoRules || []).some((rule) => {
       const key = String(rule).trim().toLowerCase();
-      return key && base === key;
+      if (!key) return false;
+
+      const head = key.startsWith("*");
+      const tail = key.endsWith("*");
+      if (!head && !tail) return base === key;
+
+      // 去掉两端的 `*` 取词干。注意 `*index*` 两边都要剥。
+      const needle = key.slice(head ? 1 : 0, tail ? -1 : undefined).trim();
+      // 光写一个 `*`（或 `**`）没意义，视为无效规则，不收任何东西
+      if (!needle) return false;
+
+      if (head && tail) return base.includes(needle);
+      if (tail) return base.startsWith(needle);
+      return base.endsWith(needle);
     });
   }
 
