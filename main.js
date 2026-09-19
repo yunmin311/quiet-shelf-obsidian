@@ -25,6 +25,8 @@ const {
   Notice,
   Modal,
 } = require("obsidian");
+const { bindI18n } = require("./i18n");
+const { renderSponsor } = require("./sponsor");
 
 const HIDDEN_CLASS = "qs-hidden";
 const EXPLORER_SELECTOR = ".nav-files-container";
@@ -38,11 +40,16 @@ const DEFAULTS = {
   focusActive: false,
   focusTargets: [],
   savedSets: [],
+  // 界面语言：auto / zh / en（见 i18n.js）。
+  language: "auto",
 };
 
 class QuietShelfPlugin extends Plugin {
   async onload() {
     this.settings = Object.assign({}, DEFAULTS, (await this.loadData()) || {});
+
+    bindI18n(this);
+    const t = (k, v) => this.i18n.t(k, v);
 
     this.app.workspace.onLayoutReady(() => this.setupObserver());
 
@@ -65,43 +72,43 @@ class QuietShelfPlugin extends Plugin {
 
     this.addCommand({
       id: "open-shelf",
-      name: "打开暗格",
+      name: t("command.openShelf"),
       callback: () => new ShelfModal(this.app, this).open(),
     });
 
     this.addCommand({
       id: "batch-manage",
-      name: "批量移入 / 移出暗格",
+      name: t("command.batch"),
       callback: () => new BatchModal(this.app, this).open(),
     });
 
     this.addCommand({
       id: "toggle-shelve",
-      name: "把当前文件移入 / 移出暗格",
+      name: t("command.toggleShelve"),
       callback: () => this.toggleShelveActiveFile(),
     });
 
     this.addCommand({
       id: "toggle-focus",
-      name: "切换聚焦模式",
+      name: t("command.toggleFocus"),
       callback: () => this.toggleFocus(),
     });
 
     this.addCommand({
       id: "focus-active-folder",
-      name: "聚焦当前文件所在文件夹",
+      name: t("command.focusFolder"),
       callback: () => this.addFocusActiveFolder(),
     });
 
     this.addCommand({
       id: "clear-focus",
-      name: "退出聚焦（恢复全部）",
+      name: t("command.clearFocus"),
       callback: () => this.clearFocus(),
     });
 
     this.addCommand({
       id: "save-focus-set",
-      name: "把当前聚焦存为组合",
+      name: t("command.saveSet"),
       callback: () => this.saveFocusSet(),
     });
 
@@ -276,10 +283,10 @@ class QuietShelfPlugin extends Plugin {
   async toggleShelve(path) {
     if (this.isShelved(path)) {
       await this.reveal(path);
-      new Notice("已从暗格放回：" + path);
+      new Notice(this.i18n.t("notice.revealed", { path }));
     } else {
       await this.shelve(path);
-      new Notice("已移入暗格：" + path);
+      new Notice(this.i18n.t("notice.shelved", { path }));
     }
     this.apply();
   }
@@ -287,7 +294,7 @@ class QuietShelfPlugin extends Plugin {
   toggleShelveActiveFile() {
     const file = this.app.workspace.getActiveFile();
     if (!file) {
-      new Notice("当前没有打开的文件");
+      new Notice(this.i18n.t("notice.noActiveFile"));
       return;
     }
     this.toggleShelve(file.path);
@@ -327,9 +334,9 @@ class QuietShelfPlugin extends Plugin {
 
   kindOf(path) {
     const f = this.app.vault.getAbstractFileByPath(path);
-    if (f && f.children) return "文件夹";
-    if (f) return "文件";
-    return "已失效";
+    if (f && f.children) return this.i18n.t("kind.folder");
+    if (f) return this.i18n.t("kind.file");
+    return this.i18n.t("kind.stale");
   }
 
   /** 暗格全部内容：手动的 + 自动规则命中的 */
@@ -350,7 +357,11 @@ class QuietShelfPlugin extends Plugin {
         if (this.settings.revealed.includes(path)) continue;
         if (!this.matchesAutoRule(path)) continue;
         seen.add(path);
-        out.push({ path, kind: f.children ? "文件夹" : "文件", auto: true });
+        out.push({
+          path,
+          kind: f.children ? this.i18n.t("kind.folder") : this.i18n.t("kind.file"),
+          auto: true,
+        });
       }
     }
 
@@ -366,20 +377,22 @@ class QuietShelfPlugin extends Plugin {
       return;
     }
     if (!this.settings.focusTargets.length) {
-      new Notice("聚焦清单是空的 —— 先对文件夹用「加入聚焦」");
+      new Notice(this.i18n.t("notice.focusEmpty"));
       return;
     }
     this.settings.focusActive = true;
     await this.save();
     this.apply();
-    new Notice("已进入聚焦：" + this.settings.focusTargets.length + " 项");
+    new Notice(
+      this.i18n.t("notice.focusOn", { n: this.settings.focusTargets.length })
+    );
   }
 
   async clearFocus() {
     this.settings.focusActive = false;
     await this.save();
     this.apply();
-    new Notice("已退出聚焦");
+    new Notice(this.i18n.t("notice.focusOff"));
   }
 
   async addFocusTarget(path) {
@@ -393,7 +406,7 @@ class QuietShelfPlugin extends Plugin {
       await this.save();
     }
     this.apply();
-    new Notice("已加入聚焦：" + path);
+    new Notice(this.i18n.t("notice.focused", { path }));
   }
 
   async removeFocusTarget(path) {
@@ -408,7 +421,7 @@ class QuietShelfPlugin extends Plugin {
   addFocusActiveFolder() {
     const file = this.app.workspace.getActiveFile();
     if (!file) {
-      new Notice("当前没有打开的文件");
+      new Notice(this.i18n.t("notice.noActiveFile"));
       return;
     }
     const dir = file.parent && file.parent.path;
@@ -418,16 +431,21 @@ class QuietShelfPlugin extends Plugin {
   async saveFocusSet() {
     const targets = this.settings.focusTargets || [];
     if (!targets.length) {
-      new Notice("聚焦清单是空的，没什么可存的");
+      new Notice(this.i18n.t("notice.nothingToSave"));
       return;
     }
-    const name = window.prompt("给这组聚焦起个名字", "组合 " + (this.settings.savedSets.length + 1));
+    const name = window.prompt(
+      this.i18n.t("prompt.setName.title"),
+      this.i18n.t("prompt.setName.default", {
+        n: this.settings.savedSets.length + 1,
+      })
+    );
     if (!name) return;
     this.settings.savedSets = this.settings.savedSets
       .filter((s) => s.name !== name)
       .concat({ name, targets: targets.slice() });
     await this.save();
-    new Notice("已保存组合：" + name);
+    new Notice(this.i18n.t("notice.setSaved", { name }));
   }
 
   async applyFocusSet(name) {
@@ -437,7 +455,7 @@ class QuietShelfPlugin extends Plugin {
     this.settings.focusActive = true;
     await this.save();
     this.apply();
-    new Notice("已切换到组合：" + name);
+    new Notice(this.i18n.t("notice.setSwitched", { name }));
   }
 
   async deleteFocusSet(name) {
@@ -455,7 +473,9 @@ class QuietShelfPlugin extends Plugin {
 
     menu.addItem((item) =>
       item
-        .setTitle(shelved ? "从暗格放回" : "移入暗格")
+        .setTitle(
+          this.i18n.t(shelved ? "menu.reveal" : "menu.shelve")
+        )
         .setIcon("archive")
         .onClick(() => this.toggleShelve(file.path))
     );
@@ -464,7 +484,7 @@ class QuietShelfPlugin extends Plugin {
       const inFocus = this.settings.focusTargets.includes(file.path);
       menu.addItem((item) =>
         item
-          .setTitle(inFocus ? "从聚焦移除" : "加入聚焦")
+          .setTitle(this.i18n.t(inFocus ? "menu.unfocus" : "menu.focus"))
           .setIcon("focus")
           .onClick(() =>
             inFocus ? this.removeFocusTarget(file.path) : this.addFocusTarget(file.path)
@@ -493,17 +513,18 @@ class ShelfModal extends Modal {
 
   render() {
     const { contentEl } = this;
+    const t = (k, v) => this.plugin.i18n.t(k, v);
     contentEl.empty();
 
     const items = this.plugin.listShelved();
-    contentEl.createEl("h4", { text: "暗格 · " + items.length + " 项" });
+    contentEl.createEl("h4", { text: t("shelf.title", { n: items.length }) });
     contentEl.createDiv({
       cls: "qs-modal-hint",
-      text: "这里的文件只是左侧不显示，位置、知识图谱、搜索都不受影响。点「放回」即恢复显示。",
+      text: t("shelf.hint"),
     });
 
     if (!items.length) {
-      contentEl.createDiv({ cls: "qs-modal-empty", text: "暗格是空的。" });
+      contentEl.createDiv({ cls: "qs-modal-empty", text: t("shelf.empty") });
       return;
     }
 
@@ -512,8 +533,10 @@ class ShelfModal extends Modal {
       const row = list.createDiv({ cls: "qs-modal-row" });
       row.createSpan({ cls: "qs-modal-kind", text: it.kind });
       row.createSpan({ cls: "qs-modal-path", text: it.path });
-      if (it.auto) row.createSpan({ cls: "qs-modal-tag", text: "自动" });
-      const btn = row.createEl("button", { text: "放回" });
+      if (it.auto) {
+        row.createSpan({ cls: "qs-modal-tag", text: t("shelf.tagAuto") });
+      }
+      const btn = row.createEl("button", { text: t("shelf.restore") });
       btn.addEventListener("click", async () => {
         await this.plugin.reveal(it.path);
         this.plugin.apply();
@@ -549,18 +572,19 @@ class BatchModal extends Modal {
 
   render() {
     const { contentEl } = this;
+    const t = (k, v) => this.plugin.i18n.t(k, v);
     contentEl.empty();
 
-    contentEl.createEl("h4", { text: "批量管理" });
+    contentEl.createEl("h4", { text: t("batch.title") });
     contentEl.createDiv({
       cls: "qs-modal-hint",
-      text: "勾选文件夹或文件，然后一次移入暗格或放回。只影响左侧文件树的显示，不动任何文件。",
+      text: t("batch.hint"),
     });
 
     const bar = contentEl.createDiv({ cls: "qs-batch-bar" });
     const search = bar.createEl("input", {
       type: "search",
-      placeholder: "筛选路径…",
+      placeholder: t("batch.filter"),
     });
     search.value = this.query;
     search.addEventListener("input", () => {
@@ -572,19 +596,19 @@ class BatchModal extends Modal {
       const b = bar.createEl("button", { text: label });
       b.addEventListener("click", fn);
     };
-    mkBtn("展开全部", () => {
+    mkBtn(t("batch.expandAll"), () => {
       this.expanded = new Set(this.allFolderPaths());
       this.renderTree();
     });
-    mkBtn("折叠全部", () => {
+    mkBtn(t("batch.collapseAll"), () => {
       this.expanded.clear();
       this.renderTree();
     });
-    mkBtn("选中当前结果", () => {
+    mkBtn(t("batch.selectResults"), () => {
       for (const n of this.allPaths()) this.selected.add(n);
       this.renderTree();
     });
-    mkBtn("清空选择", () => {
+    mkBtn(t("batch.clearSelection"), () => {
       this.selected.clear();
       this.renderTree();
     });
@@ -594,8 +618,11 @@ class BatchModal extends Modal {
 
     const foot = contentEl.createDiv({ cls: "qs-batch-foot" });
     this.countEl = foot.createSpan({ cls: "qs-batch-count" });
-    const bShelve = foot.createEl("button", { text: "移入暗格", cls: "mod-cta" });
-    const bReveal = foot.createEl("button", { text: "从暗格放回" });
+    const bShelve = foot.createEl("button", {
+      text: t("batch.shelve"),
+      cls: "mod-cta",
+    });
+    const bReveal = foot.createEl("button", { text: t("batch.reveal") });
     bShelve.addEventListener("click", () => this.run("shelve"));
     bReveal.addEventListener("click", () => this.run("reveal"));
 
@@ -626,7 +653,12 @@ class BatchModal extends Modal {
   }
 
   buildTree() {
-    const root = { path: "", name: "（整个 vault）", isFolder: true, children: [] };
+    const root = {
+      path: "",
+      name: this.plugin.i18n.t("batch.topLevel"),
+      isFolder: true,
+      children: [],
+    };
     const map = new Map([["", root]]);
     const files = this.loadedFiles().sort((a, b) => a.path.localeCompare(b.path));
 
@@ -658,7 +690,10 @@ class BatchModal extends Modal {
         .filter((f) => f.path.toLowerCase().includes(this.query))
         .sort((a, b) => a.path.localeCompare(b.path));
       if (!hits.length) {
-        tree.createDiv({ cls: "qs-modal-empty", text: "没有匹配的路径。" });
+        tree.createDiv({
+          cls: "qs-modal-empty",
+          text: this.plugin.i18n.t("batch.noMatch"),
+        });
       } else {
         for (const f of hits) {
           this.renderRow(tree, {
@@ -719,27 +754,39 @@ class BatchModal extends Modal {
     });
 
     if (this.plugin.isShelved(node.path)) {
-      row.createSpan({ cls: "qs-modal-tag", text: "已在暗格" });
+      row.createSpan({
+        cls: "qs-modal-tag",
+        text: this.plugin.i18n.t("batch.alreadyShelved"),
+      });
     }
   }
 
   updateCount() {
     if (!this.countEl) return;
     const n = this.selected.size;
-    this.countEl.setText(n ? "已选 " + n + " 项" : "还没勾选任何项");
+    this.countEl.setText(
+      n
+        ? this.plugin.i18n.t("batch.count", { n })
+        : this.plugin.i18n.t("batch.countNone")
+    );
   }
 
   async run(mode) {
     const paths = Array.from(this.selected);
     if (!paths.length) {
-      new Notice("先勾选要处理的项目");
+      new Notice(this.plugin.i18n.t("notice.pickFirst"));
       return;
     }
     const n =
       mode === "shelve"
         ? await this.plugin.shelveMany(paths)
         : await this.plugin.revealMany(paths);
-    new Notice((mode === "shelve" ? "已移入暗格 " : "已从暗格放回 ") + n + " 项");
+    new Notice(
+      this.plugin.i18n.t(
+        mode === "shelve" ? "notice.batchDone" : "notice.batchReverted",
+        { n }
+      )
+    );
     this.selected.clear();
     this.render();
   }
@@ -754,18 +801,32 @@ class QuietShelfSettingTab extends PluginSettingTab {
   display() {
     const { containerEl } = this;
     const s = this.plugin.settings;
+    const t = (k, v) => this.plugin.i18n.t(k, v);
     containerEl.empty();
 
-    containerEl.createEl("h3", { text: "暗格" });
+    containerEl.createEl("h3", { text: "Quiet Shelf" });
 
     new Setting(containerEl)
-      .setName("自动收起的文件名")
-      .setDesc(
-        "每行一个关键词，按文件名精确匹配（不含 .md 后缀，不区分大小写）。" +
-          "比如 readme、inbox、index。被手动放回过的文件不会再被自动收起。"
-      )
-      .addTextArea((t) => {
-        t.setValue((s.autoRules || []).join("\n")).onChange(async (v) => {
+      .setName(t("settings.language.name"))
+      .setDesc(t("settings.language.desc"))
+      .addDropdown((drop) => {
+        for (const opt of this.plugin.i18n.options) {
+          drop.addOption(opt.id, opt.label);
+        }
+        drop
+          .setValue(s.language || "auto")
+          .onChange(async (value) => {
+            s.language = value;
+            await this.plugin.save();
+            this.display();
+          });
+      });
+
+    new Setting(containerEl)
+      .setName(t("settings.autoRules.name"))
+      .setDesc(t("settings.autoRules.desc"))
+      .addTextArea((txt) => {
+        txt.setValue((s.autoRules || []).join("\n")).onChange(async (v) => {
           s.autoRules = v
             .split("\n")
             .map((x) => x.trim())
@@ -773,14 +834,14 @@ class QuietShelfSettingTab extends PluginSettingTab {
           await this.plugin.save();
           this.plugin.apply();
         });
-        t.inputEl.rows = 4;
+        txt.inputEl.rows = 4;
       });
 
     new Setting(containerEl)
-      .setName("启用自动规则")
-      .setDesc("关掉后只保留手动移入暗格的项目。")
-      .addToggle((t) =>
-        t.setValue(s.autoEnabled).onChange(async (v) => {
+      .setName(t("settings.autoEnabled.name"))
+      .setDesc(t("settings.autoEnabled.desc"))
+      .addToggle((tg) =>
+        tg.setValue(s.autoEnabled).onChange(async (v) => {
           s.autoEnabled = v;
           await this.plugin.save();
           this.plugin.apply();
@@ -788,33 +849,36 @@ class QuietShelfSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("打开暗格清单")
-      .setDesc("查看当前所有被收起的项目，并可逐个放回。")
+      .setName(t("settings.openShelf.name"))
+      .setDesc(t("settings.openShelf.desc"))
       .addButton((b) =>
-        b.setButtonText("打开").onClick(() => new ShelfModal(this.app, this.plugin).open())
+        b
+          .setButtonText(t("common.open"))
+          .onClick(() => new ShelfModal(this.app, this.plugin).open())
       );
 
     new Setting(containerEl)
-      .setName("批量管理")
-      .setDesc(
-        "把整个 vault 摊成可勾选的列表，一次把多个文件夹或文件移入暗格 / 放回。" +
-          "带筛选框，也可以「选中当前结果」一次性处理某个路径下的全部内容。"
-      )
+      .setName(t("settings.batch.name"))
+      .setDesc(t("settings.batch.desc"))
       .addButton((b) =>
-        b.setButtonText("打开").onClick(() => new BatchModal(this.app, this.plugin).open())
+        b
+          .setButtonText(t("common.open"))
+          .onClick(() => new BatchModal(this.app, this.plugin).open())
       );
 
     /* ---- 聚焦 ---- */
-    containerEl.createEl("h3", { text: "聚焦" });
+    containerEl.createEl("h3", { text: t("settings.focus.heading") });
 
     new Setting(containerEl)
-      .setName("当前聚焦清单（" + (s.focusTargets || []).length + " 项）")
+      .setName(
+        t("settings.focusList.name", { n: (s.focusTargets || []).length })
+      )
       .setDesc(
         (s.focusTargets || []).join("　·　") ||
-          "空。在文件上右键选「加入聚焦」，或先打开一篇笔记再用命令「聚焦当前文件所在文件夹」。"
+          t("settings.focusList.empty")
       )
       .addButton((b) =>
-        b.setButtonText("清空").onClick(async () => {
+        b.setButtonText(t("common.clear")).onClick(async () => {
           s.focusTargets = [];
           s.focusActive = false;
           await this.plugin.save();
@@ -824,25 +888,62 @@ class QuietShelfSettingTab extends PluginSettingTab {
       );
 
     if ((s.savedSets || []).length) {
-      containerEl.createEl("h4", { text: "已保存的组合" });
+      containerEl.createEl("h4", { text: t("settings.savedSets.heading") });
       for (const set of s.savedSets) {
         new Setting(containerEl)
           .setName(set.name)
           .setDesc((set.targets || []).join("  ·  "))
           .addButton((b) =>
-            b.setButtonText("切换").onClick(async () => {
+            b.setButtonText(t("settings.setSwitch")).onClick(async () => {
               await this.plugin.applyFocusSet(set.name);
               this.display();
             })
           )
           .addButton((b) =>
-            b.setButtonText("删除").onClick(async () => {
+            b.setButtonText(t("settings.setDelete")).onClick(async () => {
               await this.plugin.deleteFocusSet(set.name);
               this.display();
             })
           );
       }
     }
+
+    new Setting(containerEl)
+      .setName(t("settings.reset.name"))
+      .setDesc(t("settings.reset.desc"))
+      .addButton((b) =>
+        b.setButtonText(t("common.reset")).onClick(async () => {
+          // 语言是「这一页本身」的偏好，恢复默认时刻意保留，
+          // 否则中文用户点一下按钮界面就变成英文了。
+          const keepLang = s.language;
+          this.plugin.settings = Object.assign({}, DEFAULTS, {
+            language: keepLang,
+          });
+          await this.plugin.save();
+          this.plugin.apply();
+          new Notice(t("common.reset.done"));
+          this.display();
+        })
+      );
+
+    this.renderFooter(containerEl, t);
+  }
+
+  /** 版本 + 仓库 + 赞助。四个插件共用同一套结构与文案。 */
+  renderFooter(containerEl, t) {
+    const wrap = containerEl.createDiv({ cls: "qs-about" });
+
+    const meta = wrap.createDiv({ cls: "qs-about-meta" });
+    meta.createSpan({ text: `${t("meta.version")} ${this.plugin.manifest.version}` });
+    meta.createSpan({ cls: "qs-about-sep", text: "·" });
+    const repo = meta.createEl("a", {
+      text: this.plugin.manifest.id,
+      href: `https://github.com/yunmin311/${this.plugin.manifest.id}-obsidian`,
+    });
+    repo.setAttr("target", "_blank");
+    repo.setAttr("rel", "noopener");
+
+    renderSponsor(wrap, t);
   }
 }
 

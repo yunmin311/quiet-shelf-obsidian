@@ -73,6 +73,16 @@ Open the shelf panel from the ribbon icon, or run a command from the palette:
 **Beta builds:** add `yunmin311/quiet-shelf-obsidian` to
 [BRAT](https://github.com/TfTHacker/obsidian42-brat).
 
+## Language
+
+The settings page, commands, context-menu items, both modals and every notice
+are available in **Chinese and English**. Pick a language at the top of the
+settings page: `Auto` follows Obsidian's own language, or pin it to
+`简体中文` / `English` explicitly.
+
+Adding another language is a pure data change — an extra entry in
+`locales.js` — with no build step involved.
+
 ## Privacy
 
 No network access. No telemetry. No accounts. The plugin reads only the file

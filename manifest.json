@@ -1,7 +1,7 @@
 {
   "id": "quiet-shelf",
   "name": "Quiet Shelf",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "minAppVersion": "1.4.0",
   "description": "Tuck archived and index notes out of the file explorer without moving them, and focus on one set of folders at a time.",
   "author": "yunmin311",
