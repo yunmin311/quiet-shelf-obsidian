@@ -29,8 +29,8 @@ One rule per line, matched case-insensitively against the file name (without the
 | Rule | Matches | Example |
 |---|---|---|
 | `index` | the name is exactly `index` | `index.md` |
-| `index*` | the name starts with `index` | `index-old.md` |
 | `*index` | the name ends with `index` | `_Aesthetic Index.md` |
+| `index*` | the name starts with `index` | `index-old.md` |
 | `*index*` | the name contains `index` anywhere | `my-index-old.md` |
 
 Without a `*` the behaviour is the old exact match, so existing rules keep
@@ -39,8 +39,9 @@ working.
 > **A bare rule is an exact match, not a substring match.** A rule of `hub`
 > matches only a file called `hub` — it does **not** catch `github.md`,
 > `GitHub.md` or `my-github.md`. To match everything containing a word, write
-> `*word*`; but note that **`*hub*` *does* catch `github`**, because the name
-> contains `hub`. Pick the position that says what you mean.
+> `*word*`; but be aware that `github` **ends with** `hub`, so **`*hub` and
+> `*hub*` both catch it**. `hub*` and a bare `hub` do not. Pick the position
+> that says what you mean.
 
 ![Archive and Reading shelved away](docs/shot-shelved-tree.png)
 
@@ -131,7 +132,9 @@ mechanism every Obsidian plugin uses for local settings.
 
 ⚠️ **不带 `*` 是精确匹配，不是包含匹配。** 规则写 `hub` **只**匹配名叫 `hub` 的文件，
 **不会**收掉 `github.md` / `GitHub.md` / `my-github.md`。
-想匹配"含某词"请写 `*词*` —— 但注意 **`*hub*` 会连带收掉 `github`**（因为 `github` 里含 `hub`）。
+想匹配"含某词"请写 `*词*` —— 但注意 **`github` 是「以 `hub` 结尾」的**
+（g-i-t-h-u-b），所以 **`*hub` 和 `*hub*` 都会连带收掉 `github`**，
+而 `hub*` 与裸 `hub` 不会。按你想说的那个位置来选。
 
 安装：在社区插件里搜 "Quiet Shelf"，或从 Release 下载三个文件放进
 `.obsidian/plugins/quiet-shelf/`。

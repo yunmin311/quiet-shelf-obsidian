@@ -22,9 +22,14 @@ This project follows [Semantic Versioning](https://semver.org/).
 > - A rule of `hub` matches **only** a file called `hub`. It does **not** match
 >   `github.md`, `GitHub.md`, `github-notes.md` or `my-github.md` — all of those
 >   are left alone, which is what most people want.
-> - If you *do* want to catch everything containing a word, write `*word*`.
->   But be aware of the consequence: **`*hub*` will also catch `github`**,
->   because `github` contains `hub`. Same for `*read*` catching `AlreadyRead`.
+> - The trap is the other direction. `github` **ends with** `hub`, so any rule
+>   anchored at the **end** will catch it:
+>   - `*hub` → catches `github.md` ✗
+>   - `*hub*` → catches `github.md` ✗
+>   - `hub*` → does **not** catch it ✓ (github does not start with "hub")
+>   - `hub` → does **not** catch it ✓ (exact match only)
+>
+>   Same shape for `*read*` catching `AlreadyRead`.
 >
 > The wildcard is opt-in for exactly this reason: the three positions let you
 > say which you mean, instead of one behaviour having to guess. No action is
