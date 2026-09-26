@@ -21,6 +21,11 @@ auto-shelved by filename.
 Items you have manually un-shelved stay un-shelved — the automatic rule will not
 grab them again.
 
+Restoring an item also restores any shelved ancestors that would hide it. Other
+contents of those ancestor folders may consequently become visible, but unrelated
+explicit shelf entries stay shelved. If focus excludes a restored item, Restore
+exits focus and keeps the focus targets and saved sets for later reuse.
+
 ### Auto-shelve rules
 
 One rule per line, matched case-insensitively against the file name (without the
@@ -51,6 +56,11 @@ Select folders and files across different levels of the tree, and only that set
 (plus its ancestors and descendants) stays visible. Focus sets can be saved
 under a name and recalled later.
 
+While focus is active, the shelf panel, batch manager and settings show an exit
+button. **Exit focus keeps shelf rules**: it removes the focus filter, not your
+deliberately shelved items. Tree updates do not wait for settings to be saved; if
+a save fails, a notice warns that the old settings may return after restarting.
+
 ![Focus on a single folder](docs/shot-focus.png)
 
 ## Why
@@ -69,7 +79,7 @@ internal API, so it stays compatible across Obsidian updates.
 
 ## Usage
 
-Open the shelf panel from the ribbon icon, or run a command from the palette:
+Run a command from the palette, or open the shelf panel from the plugin settings:
 
 | Command | What it does |
 |---|---|
@@ -78,7 +88,7 @@ Open the shelf panel from the ribbon icon, or run a command from the palette:
 | Toggle shelve | Shelve / restore the item under the cursor |
 | Toggle focus | Turn focus mode on or off |
 | Focus active folder | Focus the folder of the current note |
-| Clear focus | Drop the current focus set |
+| Exit focus (keep shelf rules) | Turn focus off while keeping its targets and saved sets |
 | Save focus set | Save the current focus set under a name |
 
 ## Installation
@@ -102,8 +112,16 @@ are available in **Chinese and English**. Pick a language at the top of the
 settings page: `Auto` follows Obsidian's own language, or pin it to
 `简体中文` / `English` explicitly.
 
-Adding another language is a pure data change — an extra entry in
-`locales.js` — with no build step involved.
+To add a language, add a table in `locales.js`, then regenerate the inlined
+modules in `main.js` before distributing the plugin.
+
+## Recovery regression tests
+
+Run `node --test tests/recovery.test.js` and `node --check main.js`.
+The regression suite loads the shipped plugin with an Obsidian host substitute
+and checks restore/focus interactions, slow or failed settings writes, unload
+cleanup, wildcard rules, and bilingual key/placeholder parity. These tests do
+not replace a live Obsidian check with other file-explorer plugins enabled.
 
 ## Privacy
 
@@ -126,6 +144,14 @@ mechanism every Obsidian plugin uses for local settings.
 手动放回过的东西不会被自动规则再次收起。
 
 **聚焦**：跨层级多选文件夹和文件，只留下选中组及其祖先与后代，可存成命名组合随时切换。
+
+**放回与退出**：放回项目时，会一并放回挡住它的上级目录，因此这些目录里的其他内容也可能
+重新显示；其他单独移入暗格的项目不受影响。如果聚焦挡住了要放回的项目，会退出聚焦，
+但保留聚焦目标和已保存组合。暗格清单、批量管理和设置页都会在聚焦开启时提供退出按钮。
+「退出聚焦（保留暗格规则）」只解除聚焦过滤，不清空暗格清单。
+
+恢复文件树不再等待配置写盘成功。若保存失败，会提示当前显示已更新、但重启后可能恢复旧状态；
+请检查配置文件写入权限或同步冲突后重试。插件卸载后，延迟回调不会再次隐藏文件树。
 
 **自动规则（0.3.0 起支持通配符）**：`index` 精确匹配 / `index*` 开头 / `*index` 结尾 /
 `*index*` 包含，均不分大小写。

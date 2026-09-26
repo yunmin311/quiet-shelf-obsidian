@@ -16,6 +16,20 @@
 
 /* ---- 2. 暗格清单 ---- */
 
+.qs-focus-status {
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+}
+
+.qs-focus-status button {
+  margin-top: 8px;
+}
+
 .qs-modal h4 {
   margin: 0 0 6px;
   font-size: var(--font-ui-medium);

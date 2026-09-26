@@ -44,7 +44,7 @@ const OWN = {
     "command.toggleShelve": "把当前文件移入 / 移出暗格",
     "command.toggleFocus": "切换聚焦模式",
     "command.focusFolder": "聚焦当前文件所在文件夹",
-    "command.clearFocus": "退出聚焦（恢复全部）",
+    "command.clearFocus": "退出聚焦（保留暗格规则）",
     "command.saveSet": "把当前聚焦存为组合",
 
     "menu.reveal": "从暗格放回",
@@ -58,6 +58,9 @@ const OWN = {
     "notice.focusEmpty": "聚焦清单是空的 —— 先对文件夹用「加入聚焦」",
     "notice.focusOn": "已进入聚焦：{n} 项",
     "notice.focusOff": "已退出聚焦",
+    "notice.restoreExitedFocus": "为显示放回的项目，已退出聚焦；聚焦清单仍保留。",
+    "notice.saveFailed": "当前显示已更新，但设置未保存。重启后可能恢复旧状态，请检查配置文件写入权限或同步冲突后重试。",
+    "focus.activeHint": "聚焦正在开启：未选中的文件夹和文件会被隐藏。退出聚焦不会清空暗格规则或聚焦清单。",
     "notice.focused": "已加入聚焦：{path}",
     "notice.nothingToSave": "聚焦清单是空的，没什么可存的",
     "notice.setSaved": "已保存组合：{name}",
@@ -75,14 +78,14 @@ const OWN = {
 
     "shelf.title": "暗格 · {n} 项",
     "shelf.hint":
-      "这里的文件只是左侧不显示，位置、知识图谱、搜索都不受影响。点「放回」即恢复显示。",
+      "这里只隐藏文件树，不移动文件。放回时会一并放回挡住它的上级目录；若项目不在聚焦范围，会退出聚焦以恢复显示。",
     "shelf.empty": "暗格是空的。",
     "shelf.tagAuto": "自动",
     "shelf.restore": "放回",
 
     "batch.title": "批量管理",
     "batch.hint":
-      "勾选文件夹或文件，然后一次移入暗格或放回。只影响左侧文件树的显示，不动任何文件。",
+      "勾选后批量移入或放回，不改动文件。放回时会解除上级目录的暗格隐藏；若聚焦挡住所选项目，会同时退出聚焦。",
     "batch.filter": "筛选路径…",
     "batch.expandAll": "展开全部",
     "batch.collapseAll": "折叠全部",
@@ -127,7 +130,7 @@ const OWN = {
     "command.toggleShelve": "Shelve or restore the active file",
     "command.toggleFocus": "Toggle focus mode",
     "command.focusFolder": "Focus the active file's folder",
-    "command.clearFocus": "Exit focus (show everything)",
+    "command.clearFocus": "Exit focus (keep shelf rules)",
     "command.saveSet": "Save current focus as a set",
 
     "menu.reveal": "Restore from shelf",
@@ -141,6 +144,9 @@ const OWN = {
     "notice.focusEmpty": 'The focus list is empty — add a folder to focus first',
     "notice.focusOn": "Focus on: {n} item(s)",
     "notice.focusOff": "Focus off",
+    "notice.restoreExitedFocus": "Exited focus to show the restored items. Your focus list is kept.",
+    "notice.saveFailed": "The view is updated, but settings were not saved. Old settings may return after restart. Check write access or sync conflicts, then retry.",
+    "focus.activeHint": "Focus is on: unselected folders and files are hidden. Exiting focus keeps your shelf rules and focus list.",
     "notice.focused": "Added to focus: {path}",
     "notice.nothingToSave": "The focus list is empty, nothing to save",
     "notice.setSaved": "Saved set: {name}",
@@ -158,14 +164,14 @@ const OWN = {
 
     "shelf.title": "Shelf · {n} item(s)",
     "shelf.hint":
-      "These items are only hidden from the file explorer — their location, the graph and search are unaffected. Click Restore to show one again.",
+      "Only the file tree is filtered; no files are moved. Restore also restores any shelved ancestors. If focus excludes the item, focus is exited so it can be shown.",
     "shelf.empty": "The shelf is empty.",
     "shelf.tagAuto": "auto",
     "shelf.restore": "Restore",
 
     "batch.title": "Batch manage",
     "batch.hint":
-      "Tick folders or files, then shelve or restore them in one go. Only the file explorer's display changes — no file is touched.",
+      "Select items to shelve or restore without changing files. Restore also restores shelved ancestors and exits focus if it excludes any selected item.",
     "batch.filter": "Filter paths…",
     "batch.expandAll": "Expand all",
     "batch.collapseAll": "Collapse all",

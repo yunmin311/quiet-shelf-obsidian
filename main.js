@@ -86,7 +86,7 @@ const OWN = {
     "command.toggleShelve": "把当前文件移入 / 移出暗格",
     "command.toggleFocus": "切换聚焦模式",
     "command.focusFolder": "聚焦当前文件所在文件夹",
-    "command.clearFocus": "退出聚焦（恢复全部）",
+    "command.clearFocus": "退出聚焦（保留暗格规则）",
     "command.saveSet": "把当前聚焦存为组合",
 
     "menu.reveal": "从暗格放回",
@@ -100,6 +100,9 @@ const OWN = {
     "notice.focusEmpty": "聚焦清单是空的 —— 先对文件夹用「加入聚焦」",
     "notice.focusOn": "已进入聚焦：{n} 项",
     "notice.focusOff": "已退出聚焦",
+    "notice.restoreExitedFocus": "为显示放回的项目，已退出聚焦；聚焦清单仍保留。",
+    "notice.saveFailed": "当前显示已更新，但设置未保存。重启后可能恢复旧状态，请检查配置文件写入权限或同步冲突后重试。",
+    "focus.activeHint": "聚焦正在开启：未选中的文件夹和文件会被隐藏。退出聚焦不会清空暗格规则或聚焦清单。",
     "notice.focused": "已加入聚焦：{path}",
     "notice.nothingToSave": "聚焦清单是空的，没什么可存的",
     "notice.setSaved": "已保存组合：{name}",
@@ -117,14 +120,14 @@ const OWN = {
 
     "shelf.title": "暗格 · {n} 项",
     "shelf.hint":
-      "这里的文件只是左侧不显示，位置、知识图谱、搜索都不受影响。点「放回」即恢复显示。",
+      "这里只隐藏文件树，不移动文件。放回时会一并放回挡住它的上级目录；若项目不在聚焦范围，会退出聚焦以恢复显示。",
     "shelf.empty": "暗格是空的。",
     "shelf.tagAuto": "自动",
     "shelf.restore": "放回",
 
     "batch.title": "批量管理",
     "batch.hint":
-      "勾选文件夹或文件，然后一次移入暗格或放回。只影响左侧文件树的显示，不动任何文件。",
+      "勾选后批量移入或放回，不改动文件。放回时会解除上级目录的暗格隐藏；若聚焦挡住所选项目，会同时退出聚焦。",
     "batch.filter": "筛选路径…",
     "batch.expandAll": "展开全部",
     "batch.collapseAll": "折叠全部",
@@ -169,7 +172,7 @@ const OWN = {
     "command.toggleShelve": "Shelve or restore the active file",
     "command.toggleFocus": "Toggle focus mode",
     "command.focusFolder": "Focus the active file's folder",
-    "command.clearFocus": "Exit focus (show everything)",
+    "command.clearFocus": "Exit focus (keep shelf rules)",
     "command.saveSet": "Save current focus as a set",
 
     "menu.reveal": "Restore from shelf",
@@ -183,6 +186,9 @@ const OWN = {
     "notice.focusEmpty": 'The focus list is empty — add a folder to focus first',
     "notice.focusOn": "Focus on: {n} item(s)",
     "notice.focusOff": "Focus off",
+    "notice.restoreExitedFocus": "Exited focus to show the restored items. Your focus list is kept.",
+    "notice.saveFailed": "The view is updated, but settings were not saved. Old settings may return after restart. Check write access or sync conflicts, then retry.",
+    "focus.activeHint": "Focus is on: unselected folders and files are hidden. Exiting focus keeps your shelf rules and focus list.",
     "notice.focused": "Added to focus: {path}",
     "notice.nothingToSave": "The focus list is empty, nothing to save",
     "notice.setSaved": "Saved set: {name}",
@@ -200,14 +206,14 @@ const OWN = {
 
     "shelf.title": "Shelf · {n} item(s)",
     "shelf.hint":
-      "These items are only hidden from the file explorer — their location, the graph and search are unaffected. Click Restore to show one again.",
+      "Only the file tree is filtered; no files are moved. Restore also restores any shelved ancestors. If focus excludes the item, focus is exited so it can be shown.",
     "shelf.empty": "The shelf is empty.",
     "shelf.tagAuto": "auto",
     "shelf.restore": "Restore",
 
     "batch.title": "Batch manage",
     "batch.hint":
-      "Tick folders or files, then shelve or restore them in one go. Only the file explorer's display changes — no file is touched.",
+      "Select items to shelve or restore without changing files. Restore also restores shelved ancestors and exits focus if it excludes any selected item.",
     "batch.filter": "Filter paths…",
     "batch.expandAll": "Expand all",
     "batch.collapseAll": "Collapse all",
@@ -383,7 +389,9 @@ const DEFAULTS = {
 
 class QuietShelfPlugin extends Plugin {
   async onload() {
+    this._unloaded = false;
     this.settings = Object.assign({}, DEFAULTS, (await this.loadData()) || {});
+    if (this._unloaded) return;
 
     bindI18n(this);
     const t = (k, v) => this.i18n.t(k, v);
@@ -453,6 +461,8 @@ class QuietShelfPlugin extends Plugin {
   }
 
   onunload() {
+    // onLayoutReady and pending save continuations may outlive this instance.
+    this._unloaded = true;
     this.teardownObserver();
     this.stripAllMarks();
   }
@@ -521,6 +531,7 @@ class QuietShelfPlugin extends Plugin {
   /* ---------- DOM 打标 ---------- */
 
   setupObserver() {
+    if (this._unloaded) return;
     const container = document.querySelector(EXPLORER_SELECTOR);
     if (!container) return;
     if (container === this.observedContainer && this.observer) {
@@ -551,6 +562,7 @@ class QuietShelfPlugin extends Plugin {
   }
 
   scheduleApply() {
+    if (this._unloaded) return;
     if (this.applyTimer) return;
     this.applyTimer = window.setTimeout(() => {
       this.applyTimer = null;
@@ -559,6 +571,7 @@ class QuietShelfPlugin extends Plugin {
   }
 
   apply() {
+    if (this._unloaded) return;
     // data-path 挂在标题行（.tree-item-self）上 —— immersive-folder 用的就是
     // ".tree-item-self[data-path]"；但也有版本把它放在外层 .tree-item 上。
     // 这里同时兼容：先抓所有带 data-path 的元素，再统一往上取所属的 .tree-item，
@@ -599,13 +612,7 @@ class QuietShelfPlugin extends Plugin {
 
   async reveal(path) {
     if (!path) return;
-    const shelved = this.settings.shelved.filter((p) => p !== path);
-    const revealed = this.settings.revealed.includes(path)
-      ? this.settings.revealed
-      : this.settings.revealed.concat(path);
-    this.settings.shelved = shelved;
-    this.settings.revealed = revealed;
-    await this.save();
+    await this.revealMany([path]);
   }
 
   /** 批量移入暗格 —— 逐个 await 会写盘 N 次，这里合并成一次 */
@@ -629,12 +636,28 @@ class QuietShelfPlugin extends Plugin {
     if (!paths || !paths.length) return 0;
     const shelved = new Set(this.settings.shelved);
     const revealed = new Set(this.settings.revealed);
+    const exitFocus = paths.some((p) => this.isFocusedOut(p));
     for (const p of paths) {
       shelved.delete(p);
       revealed.add(p);
+      // A restored child is still invisible if an ancestor is shelved. Restore
+      // only blocking ancestors, leaving unrelated explicit shelf entries alone.
+      const parts = p.split("/");
+      while (parts.length > 1) {
+        parts.pop();
+        const parent = parts.join("/");
+        if (this.isShelved(parent)) {
+          shelved.delete(parent);
+          revealed.add(parent);
+        }
+      }
     }
     this.settings.shelved = Array.from(shelved);
     this.settings.revealed = Array.from(revealed);
+    if (exitFocus) {
+      this.settings.focusActive = false;
+      new Notice(this.i18n.t("notice.restoreExitedFocus"));
+    }
     await this.save();
     this.apply();
     return paths.length;
@@ -751,9 +774,18 @@ class QuietShelfPlugin extends Plugin {
 
   async clearFocus() {
     this.settings.focusActive = false;
-    await this.save();
-    this.apply();
-    new Notice(this.i18n.t("notice.focusOff"));
+    if (await this.save()) new Notice(this.i18n.t("notice.focusOff"));
+  }
+
+  renderFocusStatus(container, refresh) {
+    if (!this.settings.focusActive) return;
+    const box = container.createDiv({ cls: "qs-focus-status" });
+    box.createDiv({ text: this.i18n.t("focus.activeHint") });
+    const button = box.createEl("button", { text: this.i18n.t("command.clearFocus") });
+    button.addEventListener("click", async () => {
+      await this.clearFocus();
+      refresh();
+    });
   }
 
   async addFocusTarget(path) {
@@ -857,7 +889,17 @@ class QuietShelfPlugin extends Plugin {
   /* ---------- 存取 ---------- */
 
   async save() {
-    await this.saveData(this.settings);
+    // Showing the tree must not wait for (or depend on) a successful disk write.
+    // apply() is also guarded against continuations from an unloaded instance.
+    this.apply();
+    try {
+      await this.saveData(this.settings);
+      return true;
+    } catch (error) {
+      console.error("[Quiet Shelf] Settings could not be saved", error);
+      if (!this._unloaded) new Notice(this.i18n.t("notice.saveFailed"), 10000);
+      return false;
+    }
   }
 }
 
@@ -877,6 +919,7 @@ class ShelfModal extends Modal {
     const t = (k, v) => this.plugin.i18n.t(k, v);
     contentEl.empty();
 
+    this.plugin.renderFocusStatus(contentEl, () => this.render());
     const items = this.plugin.listShelved();
     contentEl.createEl("h4", { text: t("shelf.title", { n: items.length }) });
     contentEl.createDiv({
@@ -936,6 +979,7 @@ class BatchModal extends Modal {
     const t = (k, v) => this.plugin.i18n.t(k, v);
     contentEl.empty();
 
+    this.plugin.renderFocusStatus(contentEl, () => this.render());
     contentEl.createEl("h4", { text: t("batch.title") });
     contentEl.createDiv({
       cls: "qs-modal-hint",
@@ -1229,6 +1273,7 @@ class QuietShelfSettingTab extends PluginSettingTab {
 
     /* ---- 聚焦 ---- */
     containerEl.createEl("h3", { text: t("settings.focus.heading") });
+    this.plugin.renderFocusStatus(containerEl, () => this.display());
 
     new Setting(containerEl)
       .setName(

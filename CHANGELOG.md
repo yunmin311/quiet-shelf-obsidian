@@ -3,6 +3,19 @@
 All notable changes to this plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## 0.3.1 — 2026-09-26
+
+- Restore now also restores blocking shelf ancestors and exits focus when it
+  excludes a restored item. Focus targets and saved sets are preserved.
+- Apply display changes before saving settings, and report save failures instead
+  of leaving the file tree stuck in the previous filtered state.
+- Prevent late layout callbacks, timers and pending operations from reapplying
+  hiding after plugin unload.
+- Show a focus-active explanation and exit button in the shelf panel, batch
+  manager and settings, in Chinese and English. Clarify that exiting focus keeps
+  shelf rules, rather than claiming to show every shelved item.
+- Add shipped-plugin regression tests for recovery and unload behavior.
+
 ## 0.3.0
 
 - Auto-shelve rules now support wildcards. `*` is a wildcard and its position
